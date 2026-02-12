@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import com.nyinnovations.androidcleanarchitecturesample.BuildConfig
 import com.nyinnovations.androidcleanarchitecturesample.data.local.WeatherDatabase
 import com.nyinnovations.androidcleanarchitecturesample.data.local.dao.SavedCityDao
 import com.nyinnovations.androidcleanarchitecturesample.data.local.dao.WeatherDao
@@ -91,7 +92,7 @@ object AppModule {
         locationClient: FusedLocationProviderClient,
         geocodingApi: GeocodingApi
     ): LocationRepository {
-        return LocationRepository(context, locationClient, geocodingApi, apiKey = "REMOVED_API_KEY")
+        return LocationRepository(context, locationClient, geocodingApi, apiKey = BuildConfig.WEATHER_API_KEY)
     }
 
     @Provides
@@ -102,7 +103,6 @@ object AppModule {
         weatherDao: WeatherDao,
         cityDao: SavedCityDao
     ): WeatherRepository {
-        // TODO: replace with your own key from openweathermap.org
-        return WeatherRepositoryImpl(api, geocodingApi, weatherDao, cityDao, apiKey = "REMOVED_API_KEY")
+        return WeatherRepositoryImpl(api, geocodingApi, weatherDao, cityDao, apiKey = BuildConfig.WEATHER_API_KEY)
     }
 }
