@@ -1,10 +1,12 @@
 package com.nyinnovations.androidcleanarchitecturesample.presentation.weather
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -17,11 +19,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nyinnovations.androidcleanarchitecturesample.R
 import com.nyinnovations.androidcleanarchitecturesample.domain.model.Weather
 import com.nyinnovations.androidcleanarchitecturesample.domain.model.WeatherMoodResolver
 import kotlin.math.roundToInt
@@ -38,7 +42,19 @@ fun WeatherScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("My Cities", style = MaterialTheme.typography.headlineLarge) },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Image(
+                            painter = painterResource(id = R.drawable.weather_app_icon),
+                            contentDescription = "App logo",
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text("My Cities", style = MaterialTheme.typography.headlineLarge)
+                    }
+                },
                 actions = {
                     IconButton(onClick = { viewModel.refreshAll() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
