@@ -44,19 +44,27 @@ fun WeatherScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showSearchDialog by remember { mutableStateOf(false) }
 
-    // ask for location permission on first launch to auto-detect city
     val context = LocalContext.current
+
+    // called when the permission dialog returns a result
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         viewModel.onLocationPermissionResult(granted)
     }
 
+    // on first composition: if already have permission signal the VM directly,
+    // otherwise show the permission dialog — VM will wait for the result before seeding
     LaunchedEffect(Unit) {
-        val already = ContextCompat.checkSelfPermission(
+        val alreadyGranted = ContextCompat.checkSelfPermission(
             context, Manifest.permission.ACCESS_COARSE_LOCATION
         ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-        if (!already) {
+
+        if (alreadyGranted) {
+            // permission was granted in a previous session — tell VM to detect now
+            viewModel.onLocationPermissionResult(true)
+        } else {
+            // ask the user; onLocationPermissionResult callback handles the rest
             permissionLauncher.launch(Manifest.permission.ACCESS_COARSE_LOCATION)
         }
     }

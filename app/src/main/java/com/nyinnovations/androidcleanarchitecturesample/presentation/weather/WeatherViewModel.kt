@@ -27,8 +27,8 @@ class WeatherViewModel @Inject constructor(
     private val _searchSuggestions = MutableStateFlow<List<String>>(emptyList())
     val searchSuggestions: StateFlow<List<String>> = _searchSuggestions.asStateFlow()
 
-    // true once we've already tried to detect location on this session
-    private var locationDetected = false
+    // tracks whether we've handled the first-launch seeding
+    private var seedingDone = false
 
     private var searchJob: Job? = null
 
@@ -40,7 +40,7 @@ class WeatherViewModel @Inject constructor(
         viewModelScope.launch {
             repository.getSavedCities().collect { cities ->
                 if (cities.isEmpty()) {
-                    seedWithLocation()
+                    // wait for UI to call onLocationPermissionResult — it always does
                     return@collect
                 }
                 _state.value = _state.value.copy(cities = cities)
@@ -49,31 +49,34 @@ class WeatherViewModel @Inject constructor(
         }
     }
 
-    // try to pick user's location, fall back to London
-    private fun seedWithLocation() {
-        if (locationDetected) return
-        locationDetected = true
-
+    // UI calls this after the permission dialog is resolved
+    fun onLocationPermissionResult(granted: Boolean) {
         viewModelScope.launch {
-            val city = if (locationRepository.hasLocationPermission()) {
-                locationRepository.detectCurrentCity()
-            } else null
+            // only act if we still have no cities (first launch)
+            if (_state.value.cities.isNotEmpty() || seedingDone) return@launch
+            if (granted) {
+                doSeed()
+            } else {
+                // user denied — fall back to London
+                doSeedFallback()
+            }
+        }
+    }
 
+    private fun doSeed() {
+        if (seedingDone) return
+        seedingDone = true
+        viewModelScope.launch {
+            val city = locationRepository.detectCurrentCity()
             repository.addCity(city ?: "London")
         }
     }
 
-    // called from UI after permission is granted
-    fun onLocationPermissionResult(granted: Boolean) {
-        if (!granted || locationDetected) return
-        // only useful if cities list is still empty (first launch)
+    private fun doSeedFallback() {
+        if (seedingDone) return
+        seedingDone = true
         viewModelScope.launch {
-            val currentCities = _state.value.cities
-            if (currentCities.isNotEmpty()) return@launch
-
-            locationDetected = true
-            val city = locationRepository.detectCurrentCity()
-            repository.addCity(city ?: "London")
+            repository.addCity("London")
         }
     }
 
