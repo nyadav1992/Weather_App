@@ -11,4 +11,5 @@ interface WeatherRepository {
     fun getSavedCities(): Flow<List<String>>
     suspend fun addCity(cityName: String): Boolean
     suspend fun removeCity(cityName: String)
+    suspend fun searchCities(query: String): List<String>
 }

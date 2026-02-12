@@ -5,6 +5,7 @@ import com.nyinnovations.androidcleanarchitecturesample.data.local.dao.WeatherDa
 import com.nyinnovations.androidcleanarchitecturesample.data.local.entity.SavedCityEntity
 import com.nyinnovations.androidcleanarchitecturesample.data.mapper.toDomain
 import com.nyinnovations.androidcleanarchitecturesample.data.mapper.toEntity
+import com.nyinnovations.androidcleanarchitecturesample.data.remote.GeocodingApi
 import com.nyinnovations.androidcleanarchitecturesample.data.remote.WeatherApi
 import com.nyinnovations.androidcleanarchitecturesample.domain.model.Forecast
 import com.nyinnovations.androidcleanarchitecturesample.domain.model.Weather
@@ -17,6 +18,7 @@ import javax.inject.Inject
 
 class WeatherRepositoryImpl @Inject constructor(
     private val api: WeatherApi,
+    private val geocodingApi: GeocodingApi,
     private val weatherDao: WeatherDao,
     private val cityDao: SavedCityDao,
     private val apiKey: String
@@ -57,5 +59,21 @@ class WeatherRepositoryImpl @Inject constructor(
 
     override suspend fun removeCity(cityName: String) {
         cityDao.deleteCity(cityName)
+    }
+
+    override suspend fun searchCities(query: String): List<String> {
+        return try {
+            geocodingApi.searchCities(query, limit = 5, apiKey = apiKey)
+                .map { geo ->
+                    buildString {
+                        append(geo.name)
+                        geo.state?.let { append(", $it") }
+                        append(", ${geo.country}")
+                    }
+                }
+                .distinct()
+        } catch (_: Exception) {
+            emptyList()
+        }
     }
 }

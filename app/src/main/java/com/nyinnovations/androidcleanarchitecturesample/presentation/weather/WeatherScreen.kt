@@ -94,6 +94,7 @@ fun WeatherScreen(
 
     if (showSearchDialog) {
         SearchCityDialog(
+            viewModel = viewModel,
             onDismiss = { showSearchDialog = false },
             onSearch = { city ->
                 viewModel.addCity(city)
@@ -185,24 +186,75 @@ private fun CityWeatherCard(
 }
 
 @Composable
-private fun SearchCityDialog(onDismiss: () -> Unit, onSearch: (String) -> Unit) {
-    var city by remember { mutableStateOf("") }
+private fun SearchCityDialog(
+    viewModel: WeatherViewModel,
+    onDismiss: () -> Unit,
+    onSearch: (String) -> Unit
+) {
+    var query by remember { mutableStateOf("") }
+    val suggestions by viewModel.searchSuggestions.collectAsStateWithLifecycle()
+
+    DisposableEffect(Unit) {
+        onDispose { viewModel.clearSuggestions() }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Add City") },
         text = {
-            OutlinedTextField(
-                value = city,
-                onValueChange = { city = it },
-                label = { Text("City name") },
-                singleLine = true
-            )
+            Column {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = {
+                        query = it
+                        viewModel.onSearchQueryChanged(it)
+                    },
+                    label = { Text("Search city...") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // suggestions dropdown
+                if (suggestions.isNotEmpty()) {
+                    Spacer(Modifier.height(8.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    ) {
+                        Column {
+                            suggestions.forEach { suggestion ->
+                                val cityOnly = suggestion.substringBefore(",").trim()
+                                Text(
+                                    text = suggestion,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            query = cityOnly
+                                            viewModel.clearSuggestions()
+                                        }
+                                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                if (suggestion != suggestions.last()) {
+                                    HorizontalDivider(
+                                        color = MaterialTheme.colorScheme.surface,
+                                        thickness = 0.5.dp
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         },
         confirmButton = {
-            TextButton(onClick = { if (city.isNotBlank()) onSearch(city.trim()) }, enabled = city.isNotBlank()) {
-                Text("Add")
-            }
+            TextButton(
+                onClick = { if (query.isNotBlank()) onSearch(query.trim()) },
+                enabled = query.isNotBlank()
+            ) { Text("Add") }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancel") }

@@ -6,10 +6,11 @@ import com.nyinnovations.androidcleanarchitecturesample.domain.model.Weather
 import com.nyinnovations.androidcleanarchitecturesample.domain.repository.WeatherRepository
 import com.nyinnovations.androidcleanarchitecturesample.domain.util.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -20,6 +21,11 @@ class WeatherViewModel @Inject constructor(
 
     private val _state = MutableStateFlow(WeatherUiState())
     val state: StateFlow<WeatherUiState> = _state.asStateFlow()
+
+    private val _searchSuggestions = MutableStateFlow<List<String>>(emptyList())
+    val searchSuggestions: StateFlow<List<String>> = _searchSuggestions.asStateFlow()
+
+    private var searchJob: Job? = null
 
     init {
         observeCities()
@@ -79,5 +85,22 @@ class WeatherViewModel @Inject constructor(
 
     fun clearError() {
         _state.value = _state.value.copy(error = null)
+    }
+
+    fun onSearchQueryChanged(query: String) {
+        searchJob?.cancel()
+        if (query.length < 2) {
+            _searchSuggestions.value = emptyList()
+            return
+        }
+        searchJob = viewModelScope.launch {
+            delay(300) // debounce so we don't spam the API
+            val results = repository.searchCities(query)
+            _searchSuggestions.value = results
+        }
+    }
+
+    fun clearSuggestions() {
+        _searchSuggestions.value = emptyList()
     }
 }

@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.nyinnovations.androidcleanarchitecturesample.data.local.WeatherDatabase
 import com.nyinnovations.androidcleanarchitecturesample.data.local.dao.SavedCityDao
 import com.nyinnovations.androidcleanarchitecturesample.data.local.dao.WeatherDao
+import com.nyinnovations.androidcleanarchitecturesample.data.remote.GeocodingApi
 import com.nyinnovations.androidcleanarchitecturesample.data.remote.WeatherApi
 import com.nyinnovations.androidcleanarchitecturesample.data.repository.WeatherRepositoryImpl
 import com.nyinnovations.androidcleanarchitecturesample.domain.repository.WeatherRepository
@@ -57,6 +58,17 @@ object AppModule {
     }
 
     @Provides
+    @Singleton
+    fun provideGeocodingApi(client: OkHttpClient): GeocodingApi {
+        return Retrofit.Builder()
+            .baseUrl("https://api.openweathermap.org/geo/1.0/")
+            .client(client)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(GeocodingApi::class.java)
+    }
+
+    @Provides
     fun provideWeatherDao(db: WeatherDatabase): WeatherDao = db.weatherDao()
 
     @Provides
@@ -66,10 +78,11 @@ object AppModule {
     @Singleton
     fun provideWeatherRepository(
         api: WeatherApi,
+        geocodingApi: GeocodingApi,
         weatherDao: WeatherDao,
         cityDao: SavedCityDao
     ): WeatherRepository {
         // TODO: replace with your own key from openweathermap.org
-        return WeatherRepositoryImpl(api, weatherDao, cityDao, apiKey = "REMOVED_API_KEY")
+        return WeatherRepositoryImpl(api, geocodingApi, weatherDao, cityDao, apiKey = "REMOVED_API_KEY")
     }
 }
