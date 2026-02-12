@@ -2,9 +2,12 @@ package com.nyinnovations.androidcleanarchitecturesample.data.di
 
 import android.content.Context
 import androidx.room.Room
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
 import com.nyinnovations.androidcleanarchitecturesample.data.local.WeatherDatabase
 import com.nyinnovations.androidcleanarchitecturesample.data.local.dao.SavedCityDao
 import com.nyinnovations.androidcleanarchitecturesample.data.local.dao.WeatherDao
+import com.nyinnovations.androidcleanarchitecturesample.data.location.LocationRepository
 import com.nyinnovations.androidcleanarchitecturesample.data.remote.GeocodingApi
 import com.nyinnovations.androidcleanarchitecturesample.data.remote.WeatherApi
 import com.nyinnovations.androidcleanarchitecturesample.data.repository.WeatherRepositoryImpl
@@ -19,6 +22,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
@@ -73,6 +77,22 @@ object AppModule {
 
     @Provides
     fun provideSavedCityDao(db: WeatherDatabase): SavedCityDao = db.savedCityDao()
+
+    @Provides
+    @Singleton
+    fun provideFusedLocationClient(@ApplicationContext context: Context): FusedLocationProviderClient {
+        return LocationServices.getFusedLocationProviderClient(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideLocationRepository(
+        @ApplicationContext context: Context,
+        locationClient: FusedLocationProviderClient,
+        geocodingApi: GeocodingApi
+    ): LocationRepository {
+        return LocationRepository(context, locationClient, geocodingApi, apiKey = "REMOVED_API_KEY")
+    }
 
     @Provides
     @Singleton

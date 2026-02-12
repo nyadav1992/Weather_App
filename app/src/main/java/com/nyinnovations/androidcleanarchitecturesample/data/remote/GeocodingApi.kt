@@ -12,5 +12,13 @@ interface GeocodingApi {
         @Query("limit") limit: Int = 5,
         @Query("appid") apiKey: String
     ): List<GeocodingResponse>
+
+    @GET("reverse")
+    suspend fun reverseGeocode(
+        @Query("lat") lat: Double,
+        @Query("lon") lon: Double,
+        @Query("limit") limit: Int = 1,
+        @Query("appid") apiKey: String
+    ): List<GeocodingResponse>
 }
 

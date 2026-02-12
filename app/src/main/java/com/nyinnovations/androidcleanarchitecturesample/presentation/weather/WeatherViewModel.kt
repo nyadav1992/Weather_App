@@ -2,6 +2,7 @@ package com.nyinnovations.androidcleanarchitecturesample.presentation.weather
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nyinnovations.androidcleanarchitecturesample.data.location.LocationRepository
 import com.nyinnovations.androidcleanarchitecturesample.domain.model.Weather
 import com.nyinnovations.androidcleanarchitecturesample.domain.repository.WeatherRepository
 import com.nyinnovations.androidcleanarchitecturesample.domain.util.Result
@@ -16,7 +17,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class WeatherViewModel @Inject constructor(
-    private val repository: WeatherRepository
+    private val repository: WeatherRepository,
+    private val locationRepository: LocationRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(WeatherUiState())
@@ -24,6 +26,9 @@ class WeatherViewModel @Inject constructor(
 
     private val _searchSuggestions = MutableStateFlow<List<String>>(emptyList())
     val searchSuggestions: StateFlow<List<String>> = _searchSuggestions.asStateFlow()
+
+    // true once we've already tried to detect location on this session
+    private var locationDetected = false
 
     private var searchJob: Job? = null
 
@@ -35,13 +40,40 @@ class WeatherViewModel @Inject constructor(
         viewModelScope.launch {
             repository.getSavedCities().collect { cities ->
                 if (cities.isEmpty()) {
-                    // seed with London on first launch
-                    repository.addCity("London")
+                    seedWithLocation()
                     return@collect
                 }
                 _state.value = _state.value.copy(cities = cities)
                 cities.forEach { loadWeatherForCity(it) }
             }
+        }
+    }
+
+    // try to pick user's location, fall back to London
+    private fun seedWithLocation() {
+        if (locationDetected) return
+        locationDetected = true
+
+        viewModelScope.launch {
+            val city = if (locationRepository.hasLocationPermission()) {
+                locationRepository.detectCurrentCity()
+            } else null
+
+            repository.addCity(city ?: "London")
+        }
+    }
+
+    // called from UI after permission is granted
+    fun onLocationPermissionResult(granted: Boolean) {
+        if (!granted || locationDetected) return
+        // only useful if cities list is still empty (first launch)
+        viewModelScope.launch {
+            val currentCities = _state.value.cities
+            if (currentCities.isNotEmpty()) return@launch
+
+            locationDetected = true
+            val city = locationRepository.detectCurrentCity()
+            repository.addCity(city ?: "London")
         }
     }
 
