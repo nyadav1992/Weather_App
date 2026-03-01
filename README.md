@@ -2,6 +2,14 @@
 
 A personal Android project I built to practice Clean Architecture with a real-world use case. It's a multi-city weather dashboard that lets you track weather for up to 5 cities, search by name with live suggestions, and check a detailed 5-day forecast — all with a deep navy dark theme.
 
+## Screenshots
+
+<p align="center">
+  <img src="app/src/main/res/screeshot/screen1.png" width="30%" />
+  <img src="app/src/main/res/screeshot/screen2.png" width="30%" />
+  <img src="app/src/main/res/screeshot/screen3.png" width="30%" />
+</p>
+
 ## What it does
 
 - **Multi-city dashboard** — add up to 5 cities and see current weather for all of them on one screen. Starts with London by default on first launch.
