@@ -9,7 +9,7 @@ import com.nyinnovations.androidcleanarchitecturesample.data.local.entity.Weathe
 
 @Database(
     entities = [WeatherEntity::class, SavedCityEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class WeatherDatabase : RoomDatabase() {

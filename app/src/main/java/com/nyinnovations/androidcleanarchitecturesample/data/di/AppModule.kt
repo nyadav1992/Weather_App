@@ -6,6 +6,8 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.nyinnovations.androidcleanarchitecturesample.BuildConfig
 import com.nyinnovations.androidcleanarchitecturesample.data.local.WeatherDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.nyinnovations.androidcleanarchitecturesample.data.local.dao.SavedCityDao
 import com.nyinnovations.androidcleanarchitecturesample.data.local.dao.WeatherDao
 import com.nyinnovations.androidcleanarchitecturesample.data.location.LocationRepository
@@ -57,8 +59,17 @@ object AppModule {
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): WeatherDatabase {
+        // migration v2→v3: added isAutoCity column to saved_cities
+        val migration2to3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE saved_cities ADD COLUMN isAutoCity INTEGER NOT NULL DEFAULT 0"
+                )
+            }
+        }
         return Room.databaseBuilder(context, WeatherDatabase::class.java, "weather_db")
-            .fallbackToDestructiveMigration()
+            .addMigrations(migration2to3)
+            .fallbackToDestructiveMigration() // safety net for anything older than v2
             .build()
     }
 
