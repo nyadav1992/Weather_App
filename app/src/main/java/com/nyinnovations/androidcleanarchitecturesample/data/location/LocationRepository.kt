@@ -42,12 +42,12 @@ class LocationRepository @Inject constructor(
     private suspend fun getBestLocation(): Location? {
         if (!hasLocationPermission()) return null
 
-        // try fresh location first (5 second timeout)
-        val fresh = withTimeoutOrNull(5_000L) {
+        // HIGH_ACCURACY forces a real GPS fix — avoids stale Google coarse cache (Mountain View)
+        val fresh = withTimeoutOrNull(8_000L) {
             suspendCancellableCoroutine { cont ->
                 val cts = CancellationTokenSource()
                 locationClient
-                    .getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, cts.token)
+                    .getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, cts.token)
                     .addOnSuccessListener { cont.resume(it) }
                     .addOnFailureListener { cont.resume(null) }
                 cont.invokeOnCancellation { cts.cancel() }
@@ -55,7 +55,7 @@ class LocationRepository @Inject constructor(
         }
         if (fresh != null) return fresh
 
-        // fall back to last known location (instant, no GPS needed)
+        // fall back to last known location only if fresh failed
         return suspendCancellableCoroutine { cont ->
             locationClient.lastLocation
                 .addOnSuccessListener { cont.resume(it) }

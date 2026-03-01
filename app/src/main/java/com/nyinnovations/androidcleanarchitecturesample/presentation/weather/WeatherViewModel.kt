@@ -27,6 +27,10 @@ class WeatherViewModel @Inject constructor(
     private val _searchSuggestions = MutableStateFlow<List<String>>(emptyList())
     val searchSuggestions: StateFlow<List<String>> = _searchSuggestions.asStateFlow()
 
+    // tracks the current GPS-detected city name so search can show it first
+    private val _currentAutoCity = MutableStateFlow<String?>(null)
+    val currentAutoCity: StateFlow<String?> = _currentAutoCity.asStateFlow()
+
     // prevent duplicate location updates within the same session
     private var locationUpdateDone = false
 
@@ -54,6 +58,7 @@ class WeatherViewModel @Inject constructor(
             _state.value = _state.value.copy(isLocating = true)
             if (granted) {
                 val city = locationRepository.detectCurrentCity() ?: "London"
+                _currentAutoCity.value = city
                 repository.updateAutoCity(city)
             } else {
                 repository.updateAutoCity("London")
@@ -110,12 +115,20 @@ class WeatherViewModel @Inject constructor(
     fun onSearchQueryChanged(query: String) {
         searchJob?.cancel()
         if (query.length < 2) {
-            _searchSuggestions.value = emptyList()
+            // show current location as a quick-pick hint when field is short
+            val autoCity = _currentAutoCity.value
+            _searchSuggestions.value = if (autoCity != null) listOf("📍 $autoCity (current)") else emptyList()
             return
         }
         searchJob = viewModelScope.launch {
             delay(300)
-            val results = repository.searchCities(query)
+            val results = repository.searchCities(query).toMutableList()
+            // if the user's current city matches the query, pin it at top
+            val autoCity = _currentAutoCity.value
+            if (autoCity != null && autoCity.contains(query, ignoreCase = true)) {
+                results.removeAll { it.startsWith(autoCity, ignoreCase = true) }
+                results.add(0, "📍 $autoCity (current)")
+            }
             _searchSuggestions.value = results
         }
     }

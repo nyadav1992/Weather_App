@@ -259,6 +259,11 @@ private fun SearchCityDialog(
     var query by remember { mutableStateOf("") }
     val suggestions by viewModel.searchSuggestions.collectAsStateWithLifecycle()
 
+    // trigger hint on open so current city appears immediately
+    LaunchedEffect(Unit) {
+        viewModel.onSearchQueryChanged("")
+    }
+
     DisposableEffect(Unit) {
         onDispose { viewModel.clearSuggestions() }
     }
@@ -275,11 +280,11 @@ private fun SearchCityDialog(
                         viewModel.onSearchQueryChanged(it)
                     },
                     label = { Text("Search city...") },
+                    placeholder = { Text("Type or tap your location below") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                // suggestions dropdown
                 if (suggestions.isNotEmpty()) {
                     Spacer(Modifier.height(8.dp))
                     Card(
@@ -291,7 +296,15 @@ private fun SearchCityDialog(
                     ) {
                         Column {
                             suggestions.forEach { suggestion ->
-                                val cityOnly = suggestion.substringBefore(",").trim()
+                                // strip the emoji + "(current)" suffix to get plain city name
+                                val cityOnly = suggestion
+                                    .removePrefix("📍 ")
+                                    .removeSuffix(" (current)")
+                                    .substringBefore(",")
+                                    .trim()
+
+                                val isCurrentLocation = suggestion.startsWith("📍")
+
                                 Text(
                                     text = suggestion,
                                     modifier = Modifier
@@ -301,7 +314,11 @@ private fun SearchCityDialog(
                                             viewModel.clearSuggestions()
                                         }
                                         .padding(horizontal = 16.dp, vertical = 12.dp),
-                                    style = MaterialTheme.typography.bodyMedium
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = if (isCurrentLocation)
+                                        MaterialTheme.colorScheme.primary
+                                    else
+                                        MaterialTheme.colorScheme.onSurface
                                 )
                                 if (suggestion != suggestions.last()) {
                                     HorizontalDivider(
