@@ -1,6 +1,7 @@
 package com.nyinnovations.androidcleanarchitecturesample.domain.model
 
 import androidx.compose.ui.graphics.Color
+import com.nyinnovations.androidcleanarchitecturesample.util.AppConstants
 
 // maps weather conditions to a vibe — colors, suggestions, emoji
 data class WeatherMood(
@@ -16,73 +17,74 @@ object WeatherMoodResolver {
         val descLower = description.lowercase()
 
         return when {
-            "thunderstorm" in descLower -> WeatherMood(
-                emoji = "⛈️",
-                suggestion = "Stay cozy indoors, maybe watch a movie",
+            AppConstants.CONDITION_THUNDERSTORM in descLower -> WeatherMood(
+                emoji = AppConstants.EMOJI_THUNDERSTORM,
+                suggestion = AppConstants.SUGGESTION_THUNDERSTORM,
                 gradientStart = Color(0xFF1a1a2e),
                 gradientEnd = Color(0xFF16213e)
             )
-            "drizzle" in descLower || "light rain" in descLower -> WeatherMood(
-                emoji = "🌦️",
-                suggestion = "Grab a light jacket, good for a café visit",
+            AppConstants.CONDITION_DRIZZLE in descLower || AppConstants.CONDITION_LIGHT_RAIN in descLower -> WeatherMood(
+                emoji = AppConstants.EMOJI_DRIZZLE,
+                suggestion = AppConstants.SUGGESTION_DRIZZLE,
                 gradientStart = Color(0xFF4a6fa5),
                 gradientEnd = Color(0xFF7db8c9)
             )
-            "rain" in descLower -> WeatherMood(
-                emoji = "🌧️",
-                suggestion = "Don't forget your umbrella! Great for reading",
+            AppConstants.CONDITION_RAIN in descLower -> WeatherMood(
+                emoji = AppConstants.EMOJI_RAIN,
+                suggestion = AppConstants.SUGGESTION_RAIN,
                 gradientStart = Color(0xFF3d5a80),
                 gradientEnd = Color(0xFF5c8a9e)
             )
-            "snow" in descLower -> WeatherMood(
-                emoji = "❄️",
-                suggestion = "Bundle up! Perfect for hot chocolate",
+            AppConstants.CONDITION_SNOW in descLower -> WeatherMood(
+                emoji = AppConstants.EMOJI_SNOW,
+                suggestion = AppConstants.SUGGESTION_SNOW,
                 gradientStart = Color(0xFFcce5ff),
                 gradientEnd = Color(0xFFe8f4fd)
             )
-            "mist" in descLower || "fog" in descLower || "haze" in descLower -> WeatherMood(
-                emoji = "🌫️",
-                suggestion = "Drive carefully, visibility might be low",
+            AppConstants.CONDITION_MIST in descLower
+                    || AppConstants.CONDITION_FOG in descLower
+                    || AppConstants.CONDITION_HAZE in descLower -> WeatherMood(
+                emoji = AppConstants.EMOJI_MIST,
+                suggestion = AppConstants.SUGGESTION_MIST,
                 gradientStart = Color(0xFF8e9eab),
                 gradientEnd = Color(0xFFeef2f3)
             )
-            "clear" in descLower && temp > 30 -> WeatherMood(
-                emoji = "🥵",
-                suggestion = "Stay hydrated! Maybe hit the pool",
+            AppConstants.CONDITION_CLEAR in descLower && temp > AppConstants.TEMP_HOT -> WeatherMood(
+                emoji = AppConstants.EMOJI_HOT,
+                suggestion = AppConstants.SUGGESTION_HOT,
                 gradientStart = Color(0xFFf7971e),
                 gradientEnd = Color(0xFFffd200)
             )
-            "clear" in descLower -> WeatherMood(
-                emoji = "☀️",
-                suggestion = "Perfect day for a walk or outdoor workout",
+            AppConstants.CONDITION_CLEAR in descLower -> WeatherMood(
+                emoji = AppConstants.EMOJI_SUNNY,
+                suggestion = AppConstants.SUGGESTION_SUNNY,
                 gradientStart = Color(0xFF56CCF2),
                 gradientEnd = Color(0xFF2F80ED)
             )
-            "cloud" in descLower && temp > 20 -> WeatherMood(
-                emoji = "⛅",
-                suggestion = "Nice and mild, great for errands or cycling",
+            AppConstants.CONDITION_CLOUD in descLower && temp > AppConstants.TEMP_MILD -> WeatherMood(
+                emoji = AppConstants.EMOJI_PARTLY_CLOUDY,
+                suggestion = AppConstants.SUGGESTION_PARTLY_CLOUDY,
                 gradientStart = Color(0xFF89b4c4),
                 gradientEnd = Color(0xFFb8d4e3)
             )
-            "cloud" in descLower -> WeatherMood(
-                emoji = "☁️",
-                suggestion = "A bit grey, perfect for a cozy coffee break",
+            AppConstants.CONDITION_CLOUD in descLower -> WeatherMood(
+                emoji = AppConstants.EMOJI_CLOUDY,
+                suggestion = AppConstants.SUGGESTION_CLOUDY,
                 gradientStart = Color(0xFF757f9a),
                 gradientEnd = Color(0xFFd7dde8)
             )
-            temp < 0 -> WeatherMood(
-                emoji = "🥶",
-                suggestion = "Freezing out there! Layer up before heading out",
+            temp < AppConstants.TEMP_FREEZING -> WeatherMood(
+                emoji = AppConstants.EMOJI_FREEZING,
+                suggestion = AppConstants.SUGGESTION_FREEZING,
                 gradientStart = Color(0xFF2193b0),
                 gradientEnd = Color(0xFF6dd5ed)
             )
             else -> WeatherMood(
-                emoji = "🌤️",
-                suggestion = "Looks decent outside, enjoy your day!",
+                emoji = AppConstants.EMOJI_DEFAULT,
+                suggestion = AppConstants.SUGGESTION_DEFAULT,
                 gradientStart = Color(0xFF2196F3),
                 gradientEnd = Color(0xFF64B5F6)
             )
         }
     }
 }
-

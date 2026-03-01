@@ -33,6 +33,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nyinnovations.androidcleanarchitecturesample.R
 import com.nyinnovations.androidcleanarchitecturesample.domain.model.Weather
 import com.nyinnovations.androidcleanarchitecturesample.domain.model.WeatherMoodResolver
+import com.nyinnovations.androidcleanarchitecturesample.util.AppConstants
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -298,12 +299,12 @@ private fun SearchCityDialog(
                             suggestions.forEach { suggestion ->
                                 // strip the emoji + "(current)" suffix to get plain city name
                                 val cityOnly = suggestion
-                                    .removePrefix("📍 ")
-                                    .removeSuffix(" (current)")
+                                    .removePrefix("${AppConstants.CURRENT_LOCATION_PREFIX} ")
+                                    .removeSuffix(" ${AppConstants.CURRENT_LOCATION_SUFFIX}")
                                     .substringBefore(",")
                                     .trim()
 
-                                val isCurrentLocation = suggestion.startsWith("📍")
+                                val isCurrentLocation = suggestion.startsWith(AppConstants.CURRENT_LOCATION_PREFIX)
 
                                 Text(
                                     text = suggestion,

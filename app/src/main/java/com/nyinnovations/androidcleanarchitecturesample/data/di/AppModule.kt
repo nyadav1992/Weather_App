@@ -15,6 +15,7 @@ import com.nyinnovations.androidcleanarchitecturesample.data.remote.GeocodingApi
 import com.nyinnovations.androidcleanarchitecturesample.data.remote.WeatherApi
 import com.nyinnovations.androidcleanarchitecturesample.data.repository.WeatherRepositoryImpl
 import com.nyinnovations.androidcleanarchitecturesample.domain.repository.WeatherRepository
+import com.nyinnovations.androidcleanarchitecturesample.util.AppConstants
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -40,8 +41,8 @@ object AppModule {
         }
         return OkHttpClient.Builder()
             .addInterceptor(logging)
-            .connectTimeout(15, TimeUnit.SECONDS)
-            .readTimeout(15, TimeUnit.SECONDS)
+            .connectTimeout(AppConstants.CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(AppConstants.READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .build()
     }
 
@@ -49,7 +50,7 @@ object AppModule {
     @Singleton
     fun provideWeatherApi(client: OkHttpClient): WeatherApi {
         return Retrofit.Builder()
-            .baseUrl("https://api.openweathermap.org/data/2.5/")
+            .baseUrl(AppConstants.WEATHER_BASE_URL)
             .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -67,7 +68,7 @@ object AppModule {
                 )
             }
         }
-        return Room.databaseBuilder(context, WeatherDatabase::class.java, "weather_db")
+        return Room.databaseBuilder(context, WeatherDatabase::class.java, AppConstants.DB_NAME)
             .addMigrations(migration2to3)
             .fallbackToDestructiveMigration() // safety net for anything older than v2
             .build()
@@ -77,7 +78,7 @@ object AppModule {
     @Singleton
     fun provideGeocodingApi(client: OkHttpClient): GeocodingApi {
         return Retrofit.Builder()
-            .baseUrl("https://api.openweathermap.org/geo/1.0/")
+            .baseUrl(AppConstants.GEO_BASE_URL)
             .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()

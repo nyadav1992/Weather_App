@@ -6,6 +6,7 @@ import com.nyinnovations.androidcleanarchitecturesample.data.location.LocationRe
 import com.nyinnovations.androidcleanarchitecturesample.domain.model.Weather
 import com.nyinnovations.androidcleanarchitecturesample.domain.repository.WeatherRepository
 import com.nyinnovations.androidcleanarchitecturesample.domain.util.Result
+import com.nyinnovations.androidcleanarchitecturesample.util.AppConstants
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -57,11 +58,11 @@ class WeatherViewModel @Inject constructor(
         viewModelScope.launch {
             _state.value = _state.value.copy(isLocating = true)
             if (granted) {
-                val city = locationRepository.detectCurrentCity() ?: "London"
+                val city = locationRepository.detectCurrentCity() ?: AppConstants.FALLBACK_CITY
                 _currentAutoCity.value = city
                 repository.updateAutoCity(city)
             } else {
-                repository.updateAutoCity("London")
+                repository.updateAutoCity(AppConstants.FALLBACK_CITY)
             }
             _state.value = _state.value.copy(isLocating = false)
         }
@@ -90,7 +91,7 @@ class WeatherViewModel @Inject constructor(
         viewModelScope.launch {
             val added = repository.addCity(city)
             if (!added) {
-                _state.value = _state.value.copy(error = "Maximum 5 cities allowed")
+                _state.value = _state.value.copy(error = AppConstants.ERROR_MAX_CITIES)
             }
         }
     }
@@ -114,20 +115,20 @@ class WeatherViewModel @Inject constructor(
 
     fun onSearchQueryChanged(query: String) {
         searchJob?.cancel()
-        if (query.length < 2) {
-            // show current location as a quick-pick hint when field is short
+        if (query.length < AppConstants.SEARCH_MIN_CHARS) {
             val autoCity = _currentAutoCity.value
-            _searchSuggestions.value = if (autoCity != null) listOf("📍 $autoCity (current)") else emptyList()
+            _searchSuggestions.value = if (autoCity != null)
+                listOf("${AppConstants.CURRENT_LOCATION_PREFIX} $autoCity ${AppConstants.CURRENT_LOCATION_SUFFIX}")
+            else emptyList()
             return
         }
         searchJob = viewModelScope.launch {
-            delay(300)
+            delay(AppConstants.SEARCH_DEBOUNCE_MS)
             val results = repository.searchCities(query).toMutableList()
-            // if the user's current city matches the query, pin it at top
             val autoCity = _currentAutoCity.value
             if (autoCity != null && autoCity.contains(query, ignoreCase = true)) {
                 results.removeAll { it.startsWith(autoCity, ignoreCase = true) }
-                results.add(0, "📍 $autoCity (current)")
+                results.add(0, "${AppConstants.CURRENT_LOCATION_PREFIX} $autoCity ${AppConstants.CURRENT_LOCATION_SUFFIX}")
             }
             _searchSuggestions.value = results
         }

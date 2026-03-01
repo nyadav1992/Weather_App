@@ -11,6 +11,7 @@ import com.nyinnovations.androidcleanarchitecturesample.domain.model.Forecast
 import com.nyinnovations.androidcleanarchitecturesample.domain.model.Weather
 import com.nyinnovations.androidcleanarchitecturesample.domain.repository.WeatherRepository
 import com.nyinnovations.androidcleanarchitecturesample.domain.util.Result
+import com.nyinnovations.androidcleanarchitecturesample.util.AppConstants
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -34,7 +35,7 @@ class WeatherRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             val cached = weatherDao.getWeather(cityName)
             if (cached != null) emit(Result.Success(cached.toDomain()))
-            else emit(Result.Error("Couldn't load weather: ${e.localizedMessage}"))
+            else emit(Result.Error("${AppConstants.ERROR_WEATHER_LOAD}: ${e.localizedMessage}"))
         }
     }
 
@@ -43,7 +44,7 @@ class WeatherRepositoryImpl @Inject constructor(
         try {
             emit(Result.Success(api.getForecast(cityName, apiKey).toDomain()))
         } catch (e: Exception) {
-            emit(Result.Error("Couldn't load forecast: ${e.localizedMessage}"))
+            emit(Result.Error("${AppConstants.ERROR_FORECAST_LOAD}: ${e.localizedMessage}"))
         }
     }
 
@@ -52,8 +53,7 @@ class WeatherRepositoryImpl @Inject constructor(
     }
 
     override suspend fun addCity(cityName: String): Boolean {
-        // only manual cities count toward the 5-city limit
-        if (cityDao.getManualCount() >= 5) return false
+        if (cityDao.getManualCount() >= AppConstants.MAX_MANUAL_CITIES) return false
         cityDao.insertCity(SavedCityEntity(cityName = cityName, isAutoCity = false))
         return true
     }
@@ -76,7 +76,7 @@ class WeatherRepositoryImpl @Inject constructor(
 
     override suspend fun searchCities(query: String): List<String> {
         return try {
-            geocodingApi.searchCities(query, limit = 5, apiKey = apiKey)
+            geocodingApi.searchCities(query, limit = AppConstants.GEOCODING_LIMIT, apiKey = apiKey)
                 .map { geo ->
                     buildString {
                         append(geo.name)

@@ -10,6 +10,7 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
 import com.nyinnovations.androidcleanarchitecturesample.data.remote.GeocodingApi
+import com.nyinnovations.androidcleanarchitecturesample.util.AppConstants
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
@@ -43,7 +44,7 @@ class LocationRepository @Inject constructor(
         if (!hasLocationPermission()) return null
 
         // HIGH_ACCURACY forces a real GPS fix — avoids stale Google coarse cache (Mountain View)
-        val fresh = withTimeoutOrNull(8_000L) {
+        val fresh = withTimeoutOrNull(AppConstants.LOCATION_TIMEOUT_MS) {
             suspendCancellableCoroutine { cont ->
                 val cts = CancellationTokenSource()
                 locationClient
@@ -72,4 +73,3 @@ class LocationRepository @Inject constructor(
         }
     }
 }
-
