@@ -52,13 +52,26 @@ class WeatherRepositoryImpl @Inject constructor(
     }
 
     override suspend fun addCity(cityName: String): Boolean {
-        if (cityDao.getCount() >= 5) return false
-        cityDao.insertCity(SavedCityEntity(cityName = cityName))
+        // only manual cities count toward the 5-city limit
+        if (cityDao.getManualCount() >= 5) return false
+        cityDao.insertCity(SavedCityEntity(cityName = cityName, isAutoCity = false))
         return true
     }
 
     override suspend fun removeCity(cityName: String) {
         cityDao.deleteCity(cityName)
+    }
+
+    // deletes the old GPS city (if any) and inserts the new one at the top
+    override suspend fun updateAutoCity(cityName: String) {
+        cityDao.deleteAutoCity()
+        cityDao.insertCity(
+            SavedCityEntity(
+                cityName = cityName,
+                addedAt = Long.MAX_VALUE, // always first in the list
+                isAutoCity = true
+            )
+        )
     }
 
     override suspend fun searchCities(query: String): List<String> {

@@ -12,4 +12,6 @@ interface WeatherRepository {
     suspend fun addCity(cityName: String): Boolean
     suspend fun removeCity(cityName: String)
     suspend fun searchCities(query: String): List<String>
+    // replaces the auto (GPS) city — called every launch with detected location
+    suspend fun updateAutoCity(cityName: String)
 }

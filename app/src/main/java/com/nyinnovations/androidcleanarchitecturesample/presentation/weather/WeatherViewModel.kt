@@ -27,8 +27,8 @@ class WeatherViewModel @Inject constructor(
     private val _searchSuggestions = MutableStateFlow<List<String>>(emptyList())
     val searchSuggestions: StateFlow<List<String>> = _searchSuggestions.asStateFlow()
 
-    // tracks whether we've handled the first-launch seeding
-    private var seedingDone = false
+    // prevent duplicate location updates within the same session
+    private var locationUpdateDone = false
 
     private var searchJob: Job? = null
 
@@ -39,44 +39,35 @@ class WeatherViewModel @Inject constructor(
     private fun observeCities() {
         viewModelScope.launch {
             repository.getSavedCities().collect { cities ->
-                if (cities.isEmpty()) {
-                    // wait for UI to call onLocationPermissionResult — it always does
-                    return@collect
-                }
                 _state.value = _state.value.copy(cities = cities)
                 cities.forEach { loadWeatherForCity(it) }
             }
         }
     }
 
-    // UI calls this after the permission dialog is resolved
+    // UI calls this with permission result — happens on every launch
     fun onLocationPermissionResult(granted: Boolean) {
+        if (locationUpdateDone) return
+        locationUpdateDone = true
+
         viewModelScope.launch {
-            // only act if we still have no cities (first launch)
-            if (_state.value.cities.isNotEmpty() || seedingDone) return@launch
             if (granted) {
-                doSeed()
+                val city = locationRepository.detectCurrentCity()
+                if (city != null) {
+                    repository.updateAutoCity(city)
+                } else {
+                    // location API returned null, keep whatever is already there
+                    // or add London if no cities at all
+                    if (_state.value.cities.isEmpty()) {
+                        repository.updateAutoCity("London")
+                    }
+                }
             } else {
-                // user denied — fall back to London
-                doSeedFallback()
+                // permission denied — only add a fallback if the list is completely empty
+                if (_state.value.cities.isEmpty()) {
+                    repository.updateAutoCity("London")
+                }
             }
-        }
-    }
-
-    private fun doSeed() {
-        if (seedingDone) return
-        seedingDone = true
-        viewModelScope.launch {
-            val city = locationRepository.detectCurrentCity()
-            repository.addCity(city ?: "London")
-        }
-    }
-
-    private fun doSeedFallback() {
-        if (seedingDone) return
-        seedingDone = true
-        viewModelScope.launch {
-            repository.addCity("London")
         }
     }
 
@@ -90,7 +81,10 @@ class WeatherViewModel @Inject constructor(
                         _state.value = _state.value.copy(cityWeathers = updated, isLoading = false)
                     }
                     is Result.Loading -> _state.value = _state.value.copy(isLoading = true)
-                    is Result.Error -> _state.value = _state.value.copy(isLoading = false, error = result.message)
+                    is Result.Error -> _state.value = _state.value.copy(
+                        isLoading = false,
+                        error = result.message
+                    )
                 }
             }
         }
@@ -129,7 +123,7 @@ class WeatherViewModel @Inject constructor(
             return
         }
         searchJob = viewModelScope.launch {
-            delay(300) // debounce so we don't spam the API
+            delay(300)
             val results = repository.searchCities(query)
             _searchSuggestions.value = results
         }
