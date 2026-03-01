@@ -1,6 +1,7 @@
 package com.nyinnovations.androidcleanarchitecturesample.data.location
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
@@ -11,6 +12,7 @@ import com.google.android.gms.tasks.CancellationTokenSource
 import com.nyinnovations.androidcleanarchitecturesample.data.remote.GeocodingApi
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.resume
@@ -29,35 +31,42 @@ class LocationRepository @Inject constructor(
         ) == PackageManager.PERMISSION_GRANTED
     }
 
-    // grabs last known or fresh location, returns city name via reverse geocoding
+    // returns city name from GPS, or null if unavailable
     suspend fun detectCurrentCity(): String? {
         if (!hasLocationPermission()) return null
-
-        val location = getLastLocation() ?: return null
+        val location = getBestLocation() ?: return null
         return reverseGeocode(location.latitude, location.longitude)
     }
 
-    @SuppressWarnings("MissingPermission")
-    private suspend fun getLastLocation(): Location? {
+    @SuppressLint("MissingPermission")
+    private suspend fun getBestLocation(): Location? {
         if (!hasLocationPermission()) return null
 
+        // try fresh location first (5 second timeout)
+        val fresh = withTimeoutOrNull(5_000L) {
+            suspendCancellableCoroutine { cont ->
+                val cts = CancellationTokenSource()
+                locationClient
+                    .getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, cts.token)
+                    .addOnSuccessListener { cont.resume(it) }
+                    .addOnFailureListener { cont.resume(null) }
+                cont.invokeOnCancellation { cts.cancel() }
+            }
+        }
+        if (fresh != null) return fresh
+
+        // fall back to last known location (instant, no GPS needed)
         return suspendCancellableCoroutine { cont ->
-            val cts = CancellationTokenSource()
-            locationClient.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, cts.token)
-                .addOnSuccessListener { location ->
-                    cont.resume(location)
-                }
-                .addOnFailureListener {
-                    cont.resume(null)
-                }
-            cont.invokeOnCancellation { cts.cancel() }
+            locationClient.lastLocation
+                .addOnSuccessListener { cont.resume(it) }
+                .addOnFailureListener { cont.resume(null) }
         }
     }
 
     private suspend fun reverseGeocode(lat: Double, lon: Double): String? {
         return try {
-            val results = geocodingApi.reverseGeocode(lat, lon, limit = 1, apiKey = apiKey)
-            results.firstOrNull()?.name
+            geocodingApi.reverseGeocode(lat, lon, limit = 1, apiKey = apiKey)
+                .firstOrNull()?.name
         } catch (_: Exception) {
             null
         }

@@ -51,23 +51,14 @@ class WeatherViewModel @Inject constructor(
         locationUpdateDone = true
 
         viewModelScope.launch {
+            _state.value = _state.value.copy(isLocating = true)
             if (granted) {
-                val city = locationRepository.detectCurrentCity()
-                if (city != null) {
-                    repository.updateAutoCity(city)
-                } else {
-                    // location API returned null, keep whatever is already there
-                    // or add London if no cities at all
-                    if (_state.value.cities.isEmpty()) {
-                        repository.updateAutoCity("London")
-                    }
-                }
+                val city = locationRepository.detectCurrentCity() ?: "London"
+                repository.updateAutoCity(city)
             } else {
-                // permission denied — only add a fallback if the list is completely empty
-                if (_state.value.cities.isEmpty()) {
-                    repository.updateAutoCity("London")
-                }
+                repository.updateAutoCity("London")
             }
+            _state.value = _state.value.copy(isLocating = false)
         }
     }
 

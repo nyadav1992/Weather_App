@@ -105,21 +105,40 @@ fun WeatherScreen(
         }
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
-            if (state.isLoading && state.cityWeathers.isEmpty()) {
-                CircularProgressIndicator(Modifier.align(Alignment.Center))
-            } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    items(state.cities, key = { it }) { city ->
-                        val weather = state.cityWeathers[city]
-                        CityWeatherCard(
-                            cityName = city,
-                            weather = weather,
-                            onClick = { onCityClick(city) },
-                            onRemove = { viewModel.removeCity(city) }
+            when {
+                // still resolving GPS — show a centered spinner with message
+                state.isLocating && state.cities.isEmpty() -> {
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.height(16.dp))
+                        Text(
+                            "Detecting your location…",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                    }
+                }
+                // loading weather cards
+                state.isLoading && state.cityWeathers.isEmpty() && state.cities.isNotEmpty() -> {
+                    CircularProgressIndicator(Modifier.align(Alignment.Center))
+                }
+                else -> {
+                    LazyColumn(
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        items(state.cities, key = { it }) { city ->
+                            val weather = state.cityWeathers[city]
+                            CityWeatherCard(
+                                cityName = city,
+                                weather = weather,
+                                onClick = { onCityClick(city) },
+                                onRemove = { viewModel.removeCity(city) }
+                            )
+                        }
                     }
                 }
             }
